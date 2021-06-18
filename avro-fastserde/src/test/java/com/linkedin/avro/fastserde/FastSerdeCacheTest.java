@@ -5,6 +5,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import org.apache.avro.Schema;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -65,7 +68,20 @@ public class FastSerdeCacheTest {
 
   @Test(groups = "deserializationTest")
   public void testBuildFastSpecificDeserializerWithCorrectClasspath() throws Exception {
+    System.out.println(System.getProperty("java.version"));
     FastSerdeCache cache = FastSerdeCache.getDefaultInstance();
     cache.buildFastSpecificDeserializer(TestRecord.SCHEMA$, TestRecord.SCHEMA$);
+
+    int threadCnt = 1;
+    ExecutorService executorService = Executors.newFixedThreadPool(threadCnt);
+    for (int i = 0; i < threadCnt; ++i) {
+      executorService.submit(() -> {
+        cache.buildFastSpecificDeserializer(TestRecord.SCHEMA$, TestRecord.SCHEMA$);
+      });
+    }
+
+    executorService.shutdownNow();
+    executorService.awaitTermination(10, TimeUnit.SECONDS);
+
   }
 }
